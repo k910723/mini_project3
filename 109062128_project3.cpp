@@ -19,7 +19,7 @@ const std::array<Point, 8> directions{ {
 
 int player;
 const int SIZE = 8;
-const int SEARCH_DEPTH = 3;
+int SEARCH_DEPTH;
 const int inf = 100, neg_inf = -100;
 std::array<std::array<int, SIZE>, SIZE> board;
 std::vector<Point> next_valid_spots;
@@ -45,22 +45,25 @@ void read_valid_spots(std::ifstream& fin) {
     }
 }
 
-void write_valid_spot(std::ofstream& fout) {
+void write_random_spot(std::ofstream& fout) {
     int n_valid_spots = next_valid_spots.size();
     srand(time(NULL));
     // Choose random spot. (Not random uniform here)
     int index = (rand() % n_valid_spots);
     Point p = next_valid_spots[index];
     // Remember to flush the output to ensure the last action is written to file.
-    //if (next_move.x == 0 && next_move.y == 0) fout << p.x << " " << p.y << std::endl;
-    //else
-        fout << next_move.x << " " << next_move.y << std::endl;
+    fout << p.x << " " << p.y << std::endl;
+    fout.flush();
+}
+
+void write_next_spot(std::ofstream& fout) {
+    fout << next_move.x << " " << next_move.y << std::endl;
     fout.flush();
 }
 
 void find_nextmove();
 int Value(std::array<std::array<int, SIZE>, SIZE> cur_board);
-int minimax(int depth, bool maximizing, std::array<std::array<int, SIZE>, SIZE> cur_board);
+int minimax(int depth, bool maximizing, int alpha, int beta, std::array<std::array<int, SIZE>, SIZE> cur_board);
 std::vector<Point> get_valid_spots(std::array<std::array<int, SIZE>, SIZE> cur_board, int cur_player);
 bool is_spot_valid(Point center, std::array<std::array<int, SIZE>, SIZE> cur_board, int cur_player);
 bool is_disc_at(Point p, int disc, std::array<std::array<int, SIZE>, SIZE> cur_board);
@@ -71,15 +74,23 @@ int main(int, char** argv) {
     std::ofstream fout(argv[2]);
     read_board(fin);
     read_valid_spots(fin);
+    //write_random_spot(fout);
+
+    //SEARCH_DEPTH = 3;
+    //find_nextmove();
+    //write_next_spot(fout);
+
+    SEARCH_DEPTH = 6;
     find_nextmove();
-    write_valid_spot(fout);
+    write_next_spot(fout);
+
     fin.close();
     fout.close();
     return 0;
 }
 
 void find_nextmove() {
-    int val = minimax(SEARCH_DEPTH, true, board);
+    int val = minimax(SEARCH_DEPTH, true, neg_inf, inf, board);
     for (auto next : next_moves) {
         if (next.second == val) {
             next_move = next.first;
@@ -102,7 +113,7 @@ int Value(std::array<std::array<int, SIZE>, SIZE> cur_board) {
     return val;
 }
 
-int minimax(int depth, bool maximizing, std::array<std::array<int, SIZE>, SIZE> cur_board) {
+int minimax(int depth, bool maximizing, int alpha, int beta, std::array<std::array<int, SIZE>, SIZE> cur_board) {
     int cur_p = (maximizing == true) ? player : 3 - player;
     std::vector<Point> valid_spots = get_valid_spots(cur_board, cur_p);
     if (depth == 0 || valid_spots.empty()) return Value(cur_board);
@@ -110,13 +121,16 @@ int minimax(int depth, bool maximizing, std::array<std::array<int, SIZE>, SIZE> 
     int ret;
     if (maximizing) {
         ret = neg_inf;
+        if (depth == SEARCH_DEPTH) next_moves.clear();
         for (auto next : valid_spots) {
             auto tmp = cur_board;
             tmp[next.x][next.y] = cur_p;
             tmp = flip_discs(next, tmp, cur_p);
-            int _ret = minimax(depth - 1, false, tmp);
+            int _ret = minimax(depth - 1, false, alpha, beta, tmp);
             ret = std::max(ret, _ret);
+            alpha = std::max(alpha, ret);
             if (depth == SEARCH_DEPTH) next_moves.push_back(std::make_pair(next, _ret));
+            if (alpha >= beta) break;
         }
         return ret;
     }
@@ -126,7 +140,9 @@ int minimax(int depth, bool maximizing, std::array<std::array<int, SIZE>, SIZE> 
             auto tmp = cur_board;
             tmp[next.x][next.y] = cur_p;
             tmp = flip_discs(next, tmp, cur_p);
-            ret = std::min(ret, minimax(depth - 1, true, tmp));
+            ret = std::min(ret, minimax(depth - 1, true, alpha, beta, tmp));
+            beta = std::min(beta, ret);
+            if (beta <= alpha) break;
         }
         return ret;
     }
