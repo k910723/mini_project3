@@ -19,8 +19,8 @@ const std::array<Point, 8> directions{ {
 
 int player;
 const int SIZE = 8;
-int SEARCH_DEPTH;
-const int inf = 100, neg_inf = -100;
+const int SEARCH_DEPTH = 5;
+const int inf = 10000, neg_inf = -10000;
 std::array<std::array<int, SIZE>, SIZE> board;
 std::vector<Point> next_valid_spots;
 std::vector<std::pair<Point, int>> next_moves;
@@ -63,6 +63,7 @@ void write_next_spot(std::ofstream& fout) {
 
 void find_nextmove();
 int Value(std::array<std::array<int, SIZE>, SIZE> cur_board);
+int weight(std::array<std::array<int, SIZE>, SIZE> cur_board);
 int minimax(int depth, bool maximizing, int alpha, int beta, std::array<std::array<int, SIZE>, SIZE> cur_board);
 std::vector<Point> get_valid_spots(std::array<std::array<int, SIZE>, SIZE> cur_board, int cur_player);
 bool is_spot_valid(Point center, std::array<std::array<int, SIZE>, SIZE> cur_board, int cur_player);
@@ -74,13 +75,9 @@ int main(int, char** argv) {
     std::ofstream fout(argv[2]);
     read_board(fin);
     read_valid_spots(fin);
+
     //write_random_spot(fout);
 
-    //SEARCH_DEPTH = 3;
-    //find_nextmove();
-    //write_next_spot(fout);
-
-    SEARCH_DEPTH = 6;
     find_nextmove();
     write_next_spot(fout);
 
@@ -100,7 +97,9 @@ void find_nextmove() {
 }
 
 int Value(std::array<std::array<int, SIZE>, SIZE> cur_board) {
-    int blackNum = 0, whiteNum = 0, val = 0;
+    int val = 0;
+    /*
+    int blackNum = 0, whiteNum = 0;
     for (int i = 0; i < SIZE; i++) {
         for (int j = 0; j < SIZE; j++) {
             if (cur_board[i][j] == 1) blackNum++;
@@ -109,7 +108,31 @@ int Value(std::array<std::array<int, SIZE>, SIZE> cur_board) {
     }
     if (player == 1) val = blackNum - whiteNum; // plays as balck
     else if (player == 2) val = whiteNum - blackNum; // plays as white
+    */
+    val += weight(cur_board);
 
+    return val;
+}
+
+int weight(std::array<std::array<int, SIZE>, SIZE> cur_board) {
+    const int weight_table[SIZE][SIZE] =
+    {
+        { 500, -100, 70, 40, 40, 70, -100,  500},
+        {-100, -200, 10, 3,  3,  10, -200, -100},
+        { 70,   10,  15, 10, 10, 15,  10,   70},
+        { 40,   3,   10, 3,  3,  10,  3,    40},
+        { 40,   3,   10, 3,  3,  10,  3,    40},
+        { 70,   10,  15, 10, 10, 15,  10,   70},
+        {-100, -200, 10, 3,  3,  10, -200, -100},
+        { 500, -100, 70, 40, 40, 70, -100,  500},
+    };
+    int val = 0;
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            if (cur_board[i][j] == player) val += weight_table[i][j];
+            else if (cur_board[i][j] == (3 - player)) val -= weight_table[i][j];
+        }
+    }
     return val;
 }
 
