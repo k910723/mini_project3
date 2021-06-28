@@ -2,17 +2,17 @@
 Design and implement an A.I. that can play the boardgame Othello.
 
 
-### first commit
+### 1st commit
 
 generates a random valid spot.
 
-### second commit
+### 2nd commit
 
 implements minimax function and state value function
 
 ![minimax](https://i.imgur.com/OEWL6M2.jpg "minimax")
 
-### third commit
+### 3rd commit
 
 improves minimax function with alpha-beta pruning
 
